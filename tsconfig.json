@@ -17,7 +17,8 @@
         "newLine": "lf",
         "types": [
             "node",
-            "vue"
+            "vue",
+            "src/types/*.d.ts"
         ],
         "paths": {
             "@/*": [

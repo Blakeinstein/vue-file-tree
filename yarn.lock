@@ -4145,6 +4145,11 @@ function-bind@^1.1.1:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.1.tgz#a56899d3ea3c9bab874bb9773b7c5ede92f4895d"
   integrity sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==
 
+fuse.js@^6.4.4, fuse.js@^6.4.6:
+  version "6.4.6"
+  resolved "https://registry.yarnpkg.com/fuse.js/-/fuse.js-6.4.6.tgz#62f216c110e5aa22486aff20be7896d19a059b79"
+  integrity sha512-/gYxR/0VpXmWSfZOIPS3rWwU8SHgsRTwWuXhyb2O6s7aRuVtHtxCkR33bNYu3wyLyNx/Wpv0vU7FZy8Vj53VNw==
+
 generic-names@^1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/generic-names/-/generic-names-1.0.3.tgz#2d786a121aee508876796939e8e3bff836c20917"
@@ -8590,6 +8595,13 @@ void-elements@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-3.1.0.tgz#614f7fbf8d801f0bb5f0661f5b2f5785750e4f09"
   integrity sha1-YU9/v42AHwu18GYfWy9XhXUOTwk=
+
+vue-fuse@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/vue-fuse/-/vue-fuse-3.0.2.tgz#3fafb2933fbbf42aecbeb7b824a382edbc753c29"
+  integrity sha512-p9a4ZWGCIrb76VGRofbg3CnxOIAfDBjbimjTqKbeY1/rChm26Tvq0+BhHAA/8Fn42eLN5nuuFEJ4mScvRUfqRw==
+  dependencies:
+    fuse.js "^6.4.4"
 
 vue-hot-reload-api@^2.3.0:
   version "2.3.4"
