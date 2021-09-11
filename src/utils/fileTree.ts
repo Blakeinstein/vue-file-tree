@@ -1,35 +1,19 @@
-class FileTree {
-  /**
-   * Create tree and add ./ folder
-   * @param {Object} _options
-   * @param {Boolean} _options.auto_wash - Should clean empty folder on removes
-   */
-  constructor(_options = {}) {
+class FileTree implements FileTree {
+  autoWash = false;
+  filesCount = 0;
+  foldersCount = 0;
+  allCount = 0;
+  folders: IFolder[] = [];
+
+  constructor(opts: Partial<FileTreeOptions> = {}) {
     // Options
-    this.autoWash = typeof _options.autoWash === "undefined" ? false : _options.autoWash;
-    this.filesCount = 0;
-    this.foldersCount = 0;
-    this.allCount = 0;
+    opts.autoWash && this.autoWash == opts.autoWash;
 
     // Set up
-    this.folders = [];
     this.addFolder(".", {});
   }
 
-  /**
-   * Clean path
-   * @param {String} _path - Path to clean
-   * @return {String} Cleaned path
-   */
-  cleanPath(_path = "") {
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("cleanPath: _path should be a string");
-      return false;
-    }
-
-    let path = _path;
-
+  cleanPath(path: string): string {
     // Trim
     path = path.trim();
 
@@ -50,26 +34,10 @@ class FileTree {
     return path;
   }
 
-  /**
-   * Add a folder
-   * Can create nested folder in one path
-   * @param {String} _path - Path to the folder (start with `./`)
-   * @param {Object} _data - Properties to add to the folder
-   * @returns {Object} Created folder
-   */
-  addFolder(_path = "", _data = {}) {
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("addFolder: _path should be a string");
-      return false;
-    }
-    if (typeof _data !== "object") {
-      console.warn("addFolder: _data should be an object");
-      return false;
-    }
+  addFolder(path: string, data: Record<string, string> = {}): IFolder {
 
     // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
 
     let folders = this.folders;
@@ -88,17 +56,12 @@ class FileTree {
       // Folder doesn't exist
       else {
         // Create folder
-        folder = {
+        folder = <IFolder>{
           folders: [],
           files: [],
           name: _part,
+          data: {...data}
         };
-
-        // Add data
-        for (const dataKey in _data) {
-          const data = _data[dataKey];
-          folder[dataKey] = data;
-        }
 
         // Save
         folders.push(folder);
@@ -110,29 +73,13 @@ class FileTree {
     this.updateCounts();
 
     // Return
-    return folder;
+    return folder!;
   }
 
-  /**
-   * Add a file
-   * Will create folders if needed
-   * @param {String} _path - Path to the folder (start with `./`)
-   * @param {Object} _data - Properties to add to the file
-   * @returns {Object} Created file
-   */
-  addFile(_path = "", _data = {}) {
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("addFile: _path should be a string");
-      return false;
-    }
-    if (typeof _data !== "object") {
-      console.warn("addFile: _data should be an object");
-      return false;
-    }
+  addFile(path: string, data: Record<string, string> = {}): IFile {
 
     // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
     const filePart = pathParts.pop();
 
@@ -140,15 +87,10 @@ class FileTree {
     const folder = this.addFolder(pathParts.join("/"));
 
     // Create file
-    const file = {
+    const file = <IFile>{
       name: filePart,
+      data,
     };
-
-    // Add data
-    for (const dataKey in _data) {
-      const data = _data[dataKey];
-      file[dataKey] = data;
-    }
 
     // Save
     folder.files.push(file);
@@ -159,17 +101,12 @@ class FileTree {
     return file;
   }
 
-  /**
-   * Remove folder
-   * Will delete contained folders and contained files
-   * @param {String} _path - Folder to delete (start with `./`)
-   * @returns {Boolean} Folder deleted or not
-   */
-  removeFolder(_path = "") {
+  removeFolder(path: string): boolean {
     // Recursive emptying
-    const emptyFolder = function(folder) {
+    const emptyFolder = (folder: IFolder) => {
       // Delete folders
-      for (const _folderKey in folder.folders) {
+      // Array keys are strings instead of numbers... but why?
+      for (const _folderKey of folder.folders.keys()) {
         const _folder = folder.folders[_folderKey];
 
         emptyFolder(_folder);
@@ -177,41 +114,30 @@ class FileTree {
         folder.folders.splice(_folderKey, 1);
 
         // Callback
-        if (typeof _folder.onRemove === "function") {
-          _folder.onRemove.apply(this, [_folder]);
-        }
+        _folder.onRemove && _folder.onRemove.apply(this, [_folder]);
       }
-
       // Delete files
-      for (const _fileKey in folder.files) {
+      for (const _fileKey of folder.files.keys()) {
         const _file = folder.files[_fileKey];
 
         folder.files.splice(_fileKey, 1);
 
         // Callback
-        if (typeof _file.onRemove === "function") {
-          _file.onRemove.apply(this, [_file]);
+        _file.onRemove && _file.onRemove.apply(this, [_file]);
         }
-      }
     };
 
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("removeFolder: _path should be a string");
-      return false;
-    }
-
     // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
     const folderPart = pathParts.pop();
 
-    let folders = this.folders;
+    let folders: IFolder[] | null = this.folders;
     let folder = null;
 
     // Each path part
     for (const _part of pathParts) {
-      const index = folders.findIndex((folder) => _part === folder.name);
+      const index: number = folders!.findIndex((folder) => _part === folder.name);
 
       // Found
       if (index !== -1) {
@@ -228,7 +154,7 @@ class FileTree {
     }
 
     // Found
-    const index = folders.findIndex((folder) => folderPart === folder.name);
+    const index = folders? folders.findIndex((folder) => folderPart === folder.name) : - 1;
     if (folders && index !== -1) {
       const folder = folders[index];
 
@@ -237,9 +163,7 @@ class FileTree {
       folders.splice(index, 1);
 
       // Callback
-      if (typeof folder.onRemove === "function") {
-        folder.onRemove.apply(this, [folder]);
-      }
+      folder.onRemove && folder.onRemove.apply(this, [folder])
 
       // Auto wash
       if (this.autoWash) {
@@ -255,30 +179,18 @@ class FileTree {
     return false;
   }
 
-  /**
-   * Remove file
-   * Will delete contained folders and contained files
-   * @param {String} _path - File to delete (start with `./`)
-   * @returns {Boolean} File deleted or not
-   */
-  removeFile(_path = "") {
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("removeFile: _path should be a string");
-      return false;
-    }
-
+  removeFile(path: string): boolean {
     // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
     const filePart = pathParts.pop();
 
-    let folders = this.folders;
+    let folders: IFolder[] | null = this.folders;
     let folder = null;
 
     // Each path part
     for (const _part of pathParts) {
-      const index = folders.findIndex((folder) => _part === folder.name);
+      const index: number = folders!.findIndex((folder) => _part === folder.name);
 
       // Found
       if (index !== -1) {
@@ -311,9 +223,7 @@ class FileTree {
         }
 
         // Callback
-        if (typeof file.onRemove === "function") {
-          file.onRemove.apply(this, [file]);
-        }
+        file.onRemove && file.onRemove.apply(this, [file]);
 
         // Update counts
         this.updateCounts();
@@ -325,29 +235,18 @@ class FileTree {
     return false;
   }
 
-  /**
-   * Get file
-   * @param {String} _path - Path to file
-   * @returns {Object} File
-   */
-  getFile(_path = "") {
-    // Errors
-    if (typeof _path !== "string") {
-      console.warn("getFile: _path should be a string");
-      return false;
-    }
-
+  getFile(path: string): IFile | null {
     // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
     const filePart = pathParts.pop();
 
-    let folders = this.folders;
+    let folders: IFolder[] | null  = this.folders;
     let folder = null;
 
     // Each path part
     for (const _part of pathParts) {
-      const index = folders.findIndex((folder) => _part === folder.name);
+      const index: number = folders!.findIndex((folder) => _part === folder.name);
 
       // Found
       if (index !== -1) {
@@ -373,23 +272,12 @@ class FileTree {
       }
     }
 
-    return false;
+    return null;
   }
 
-  /**
-   * Get folder
-   * @param {String} _path - Path to folder
-   * @returns {Object} Folder
-   */
-  getFolder(_path = "") {
+  getFolder(path: string): IFolder | null {
     // Errors
-    if (typeof _path !== "string") {
-      console.warn("getFolder: _path should be a string");
-      return false;
-    }
-
-    // Set up
-    const path = this.cleanPath(_path);
+    path = this.cleanPath(path);
     const pathParts = path.split("/");
 
     let folders = this.folders;
@@ -407,7 +295,7 @@ class FileTree {
 
       // Folder doesn't exist
       else {
-        return false;
+        return null;
       }
     }
 
@@ -415,18 +303,14 @@ class FileTree {
     return folder;
   }
 
-  /**
-   * Browse every folders and remove empty ones
-   * @return {Number} Number of removed folders
-   */
-  removeEmptyFolders() {
+  removeEmptyFolders(): boolean {
     // Set up
     let removedCount = 0;
 
     // Recursive remove
-    const canRemoveFolder = function(folder) {
+    const canRemoveFolder = (folder: IFolder) => {
       // Each folder inside current folder
-      for (const _folderKey in folder.folders) {
+      for (const _folderKey of folder.folders.keys()) {
         // Try to remove folder
         const _folder = folder.folders[_folderKey];
         const canRemove = canRemoveFolder(_folder);
@@ -439,9 +323,7 @@ class FileTree {
           folder.folders.splice(_folderKey, 1);
 
           // Callback
-          if (typeof _folder.onRemove === "function") {
-            _folder.onRemove.apply(this, [_folder]);
-          }
+          _folder.onRemove && _folder.onRemove.apply(this, [_folder]);
         }
       }
 
@@ -462,7 +344,7 @@ class FileTree {
     // Update counts
     this.updateCounts();
 
-    return removedCount;
+    return removedCount > 0;
   }
 
   /**
@@ -473,7 +355,7 @@ class FileTree {
     let foldersCount = 0;
 
     // Recursive emptying
-    const traverseFolder = function(folder) {
+    const traverseFolder = (folder: IFolder) => {
       // Each folder
       for (const _folderKey in folder.folders) {
         const _folder = folder.folders[_folderKey];
@@ -496,35 +378,27 @@ class FileTree {
     this.allCount = this.filesCount + this.foldersCount;
   }
 
-  /**
-   * Describe the tree in ASCII (├ ─ │ └)
-   * @param {Boolean} _log - Directly log to console
-   * @param {Boolean} _colored - Colored tree (only work well in Chrome)
-   * @return {String} Tree
-   */
-  describe(_log = false, _colored = false) {
+  describe(log: boolean = false, colored: boolean = false): string {
     // Set up
     const depth = 0;
-    const styles = [];
+    const styles = <string[]>[];
 
     let stringTree = "";
 
-    const addToString = function(value = "", type = null) {
-      if (_colored) {
+    const addToString = (value: string, type: NodeType | null = null) => {
+      if (colored) {
         stringTree += "%c";
 
         switch (type) {
-          case "structure":
+          case NodeType.Structure:
             styles.push("color:#999;");
             break;
-
-          case "folder":
+          case NodeType.Folder:
             styles.push("color:#999;");
             break;
-          case "file":
+          case NodeType.File:
             styles.push("color:#333;font-weight:bold;");
             break;
-
           default:
             styles.push("");
             break;
@@ -535,7 +409,7 @@ class FileTree {
     };
 
     // Recursive describe
-    const describeFolder = function(folder, depth, last = []) {
+    const describeFolder = (folder: IFolder, depth: number, last: boolean[] = []) => {
       // Each folders
       for (let i = 0; i < folder.folders.length; i++) {
         // Set up
@@ -547,22 +421,22 @@ class FileTree {
         for (let j = 0; j < depth; j++) {
           if (j === depth - 1) {
             if (i === folder.folders.length - 1 && folder.files.length === 0) {
-              addToString(" └", "structure");
+              addToString(" └", NodeType.Structure);
             } else {
-              addToString(" ├", "structure");
+              addToString(" ├", NodeType.Structure);
             }
           } else {
             if (last[j]) {
-              addToString("  ", "structure");
+              addToString("  ", NodeType.Structure);
             } else {
-              addToString(" │", "structure");
+              addToString(" │", NodeType.Structure);
             }
           }
         }
 
-        addToString("─", "structure");
-        addToString(_folder.name, "folder");
-        addToString("/", "structure");
+        addToString("─", NodeType.Structure);
+        addToString(_folder.name, NodeType.Folder);
+        addToString("/", NodeType.Structure);
 
         // Last
         last.push(i === folder.folders.length - 1 && folder.files.length === 0);
@@ -582,31 +456,31 @@ class FileTree {
         for (let j = 0; j < depth; j++) {
           if (j === depth - 1) {
             if (i === folder.files.length - 1) {
-              addToString(" └", "structure");
+              addToString(" └", NodeType.Structure);
             } else {
-              addToString(" ├", "structure");
+              addToString(" ├", NodeType.Structure);
             }
           } else {
             if (last[j]) {
-              addToString("  ", "structure");
+              addToString("  ", NodeType.Structure);
             } else {
-              addToString(" │", "structure");
+              addToString(" │", NodeType.Structure);
             }
           }
         }
 
-        addToString("─", "structure");
-        addToString(_file.name, "file");
+        addToString("─", NodeType.Structure);
+        addToString(_file.name, NodeType.File);
       }
     };
 
     // Describe from ./
-    addToString(".", "folder");
-    addToString("/", "structure");
+    addToString(".", NodeType.Folder);
+    addToString("/", NodeType.Structure);
     describeFolder(this.folders[0], depth + 1);
 
     // Log
-    if (_log) {
+    if (log) {
       console.log(...[stringTree].concat(styles));
     }
 
