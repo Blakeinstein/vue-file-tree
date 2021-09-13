@@ -1,7 +1,7 @@
 import _Vue, { PluginObject } from 'vue';
 
 // Import vue component
-import component from '@/components/file-tree.vue';
+import component from '@/components/FileTree.vue';
 
 // Define typescript interfaces for installable component
 type InstallableComponent = typeof component & PluginObject<any>;

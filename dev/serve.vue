@@ -1,6 +1,6 @@
 <script lang="ts">
 import Vue from 'vue';
-import VueFileTree from '@/components/file-tree.vue';
+import VueFileTree from '@/components/FileTree.vue';
 
 export default Vue.extend({
   name: 'ServeDev',

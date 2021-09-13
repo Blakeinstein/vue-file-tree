@@ -1,10 +1,10 @@
 <script lang="ts">
-import Vue, { PropType } from "vue";
+import Vue, { PropType } from 'vue';
 import File from '@/components/file.vue';
 import FileIcon from '@/components/icon.vue';
 
 export default Vue.extend({
-  name: "VueFileTreeFolder",
+  name: 'VueFileTreeFolder',
   components: {
     File,
     FileIcon
@@ -20,6 +20,7 @@ export default Vue.extend({
     },
     content: {
       type: Object as PropType<IFolder>,
+      default: () => <IFolder>{},
       required: true
     },
     searchQuery: {
